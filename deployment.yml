@@ -16,9 +16,9 @@ spec:
 ---
 
 apiVersion: v1
-kind: PersistentVolumeClaim:
+kind: PersistentVolumeClaim
 metadata:
-  name: mysql-php-pvc
+  name: mysql-dados
 spec:
   storageClassName: manual
   accessModes:
@@ -32,10 +32,56 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  name: mysql-deployment
+spec:
+  selector:
+    matchLabels:
+      app: mysql-replica
+  template:
+    metadata:
+      labels:
+        app: mysql-replica
+    spec:
+      containers:
+      - image: jeanoliveira45/mysql-kub:2.0
+        name: mysql-replica
+        ports:
+        - containerPort: 3306
+        args:
+        - "--ignore-db-dir=lost+found"
+        imagePullPolicy: Always
+        volumeMounts:
+        - name: mysql-dados
+          mountPath: /var/lib/mysql
+      volumes:
+      - name: mysql-dados
+        persistentVolumeClaim:
+          claimName: mysql-dados
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
   name: php-deployment
 spec:
   selector:
     matchLabels:
       app: php-replica
+  template:
+    metadata:
+      labels:
+        app: php-replica
+    spec:
+      containers:
+      - image: jeanoliveira45/php-kub:2.0
+        imagePullPolicy: Always
+        name: php-replica
+        ports:
+        - containerPort: 80
+
+        
+
+
       
   
